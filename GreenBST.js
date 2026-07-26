@@ -48,8 +48,16 @@ class GreenBST {
     }
 
     buscarNodo(nodoActual, valor) {
-        if (!nodoActual) return null;               // no existe
-        if (valor === nodoActual.valor) return nodoActual; // encontrado
+        if (!nodoActual) return null; // no existe
+
+        // CORRECCIÓN: usamos Number(...) en ambos lados en vez de "===" directo.
+        // nodoActual.valor puede ser un objeto ProductoNodo (que define valueOf()
+        // devolviendo el id). El operador "===" NUNCA convierte un objeto a
+        // primitivo, así que un número nunca sería igual a un objeto aunque su
+        // valueOf() devuelva el mismo número. Al forzar Number() de ambos lados,
+        // se dispara la conversión correctamente y la comparación funciona.
+        if (Number(nodoActual.valor) === Number(valor)) return nodoActual; // encontrado
+
         if (valor < nodoActual.valor) {
             return this.buscarNodo(nodoActual.izquierdo, valor);
         } else {
@@ -58,7 +66,7 @@ class GreenBST {
     }
 
     // --- ELIMINACIÓN ---
-    eliminar(valor) { 
+    eliminar(valor) {
         this.raiz = this.eliminarNodo(this.raiz, valor);
     }
 
@@ -91,4 +99,36 @@ class GreenBST {
             return nodoActual;
         }
     }
+
+    // --- RECORRIDO INORDEN ---
+    // Devuelve los productos ORDENADOS por su clave. Útil para listar
+    // el catálogo completo ya clasificado.
+    inOrden() {
+        const resultado = [];
+        const recorrer = (nodo) => {
+            if (!nodo) return;
+            recorrer(nodo.izquierdo);
+            resultado.push(nodo.valor);
+            recorrer(nodo.derecho);
+        };
+        recorrer(this.raiz);
+        return resultado;
+    }
+
+    // --- EXPORTAR PARA EL FRONT ---
+    // Convierte el árbol a un objeto plano {valor, izquierdo, derecho}
+    // que luego usaremos para dibujarlo gráficamente en el frontend.
+    exportarEstructura() {
+        const convertir = (nodo) => {
+            if (!nodo) return null;
+            return {
+                valor: nodo.valor,
+                izquierdo: convertir(nodo.izquierdo),
+                derecho: convertir(nodo.derecho)
+            };
+        };
+        return convertir(this.raiz);
+    }
 }
+
+module.exports = { GreenBST, NodoArbol };

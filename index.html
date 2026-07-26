@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Herbario · Catálogo BST</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14201C;
+    --surface:#1C2B24;
+    --surface-raised:#23342B;
+    --brass:#C98A3E;
+    --brass-dim:#8A6430;
+    --sage:#7FA98C;
+    --ivory:#EDE6D6;
+    --muted:#8FA090;
+    --danger:#C15B4A;
+    --border:rgba(237,230,214,0.12);
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(127,169,140,0.07), transparent 45%),
+      radial-gradient(circle at 85% 20%, rgba(201,138,62,0.06), transparent 40%),
+      var(--bg);
+    color:var(--ivory);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+  }
+  ::selection{ background:var(--brass); color:#14201C; }
+
+  /* ---------- Header ---------- */
+  header{
+    padding:28px 36px 24px;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:24px;
+    flex-wrap:wrap;
+  }
+  .brand{ display:flex; flex-direction:column; gap:6px; }
+  .brand .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--sage);
+  }
+  .brand h1{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:32px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .brand p{
+    margin:0;
+    color:var(--muted);
+    font-size:14px;
+    max-width:520px;
+    line-height:1.5;
+  }
+  .stats{ display:flex; gap:28px; }
+  .stat{ text-align:right; }
+  .stat .num{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:26px;
+    color:var(--brass);
+    line-height:1;
+  }
+  .stat .label{
+    font-size:11px;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    margin-top:4px;
+  }
+
+  /* ---------- Layout ---------- */
+  .layout{
+    display:grid;
+    grid-template-columns:300px 1fr;
+    gap:0;
+    align-items:start;
+  }
+  @media (max-width:880px){
+    .layout{ grid-template-columns:1fr; }
+  }
+
+  /* ---------- Sidebar ---------- */
+  aside{
+    padding:28px 24px;
+    border-right:1px solid var(--border);
+    position:sticky;
+    top:0;
+    display:flex;
+    flex-direction:column;
+    gap:22px;
+    min-height:calc(100vh - 105px);
+  }
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+  }
+  .panel h2{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--sage);
+    margin:0 0 12px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .panel h2::before{
+    content:'';
+    width:6px; height:6px;
+    border-radius:50%;
+    background:var(--brass);
+    display:inline-block;
+  }
+  label{
+    display:block;
+    font-size:12px;
+    color:var(--muted);
+    margin:10px 0 4px;
+  }
+  input, select{
+    width:100%;
+    background:var(--surface-raised);
+    border:1px solid var(--border);
+    color:var(--ivory);
+    padding:9px 10px;
+    border-radius:7px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    outline:none;
+    transition:border-color .15s;
+  }
+  input::placeholder{ color:#5E6E62; }
+  input:focus, select:focus{ border-color:var(--brass); }
+
+  .row{ display:flex; gap:8px; }
+  .row > *{ flex:1; }
+
+  button{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-weight:500;
+    font-size:13px;
+    border:none;
+    border-radius:7px;
+    padding:10px 14px;
+    cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  button:active{ transform:translateY(1px); }
+  button:focus-visible{ outline:2px solid var(--brass); outline-offset:2px; }
+  .btn-primary{ background:var(--brass); color:#1B140A; width:100%; margin-top:12px; }
+  .btn-primary:hover{ filter:brightness(1.08); }
+  .btn-secondary{ background:var(--surface-raised); color:var(--ivory); border:1px solid var(--border); width:100%; margin-top:12px; }
+  .btn-secondary:hover{ border-color:var(--sage); }
+  .btn-danger{ background:transparent; color:var(--danger); border:1px solid var(--danger); width:100%; margin-top:12px; }
+  .btn-danger:hover{ background:rgba(193,91,74,0.12); }
+
+  .toggle-line{ display:flex; align-items:center; gap:8px; margin-top:10px; font-size:12px; color:var(--muted); }
+  .toggle-line input{ width:auto; accent-color:var(--brass); }
+
+  #estado{
+    margin-top:auto;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    line-height:1.5;
+    color:var(--muted);
+    padding:10px 12px;
+    border-left:2px solid var(--border);
+  }
+  #estado.ok{ border-color:var(--sage); color:var(--sage); }
+  #estado.error{ border-color:var(--danger); color:var(--danger); }
+
+  /* ---------- Main / tree ---------- */
+  main{ padding:28px 32px 60px; }
+  .section-title{
+    font-family:'Fraunces', serif;
+    font-size:19px;
+    font-weight:500;
+    margin:0 0 4px;
+  }
+  .section-sub{ color:var(--muted); font-size:13px; margin:0 0 16px; }
+
+  #tree-wrap{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    overflow:auto;
+    min-height:360px;
+    padding:20px 10px;
+  }
+  #tree-empty{
+    color:var(--muted);
+    font-size:13px;
+    text-align:center;
+    padding:60px 20px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .node-card rect{
+    fill:var(--surface-raised);
+    stroke:var(--border);
+    stroke-width:1;
+    transition:stroke .3s, fill .3s;
+  }
+  .node-card.hit rect{ stroke:var(--brass); stroke-width:2; fill:#2A2013; }
+  .node-card .id-tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    fill:var(--sage);
+  }
+  .node-card .name{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:12px;
+    font-weight:500;
+    fill:var(--ivory);
+  }
+  .node-card .price{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    fill:var(--brass);
+  }
+  .node-card .dot{ fill:var(--sage); }
+  .node-card .dot.off{ fill:var(--danger); }
+  .edge{
+    fill:none;
+    stroke:var(--border);
+    stroke-width:1.4;
+  }
+
+  table{ width:100%; border-collapse:collapse; margin-top:18px; font-size:13px; }
+  th{
+    text-align:left;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--muted);
+    padding:8px 10px;
+    border-bottom:1px solid var(--border);
+  }
+  td{ padding:9px 10px; border-bottom:1px solid var(--border); }
+  tr:hover td{ background:rgba(237,230,214,0.03); }
+  td.mono{ font-family:'IBM Plex Mono', monospace; color:var(--sage); }
+  .badge{
+    display:inline-block; padding:2px 8px; border-radius:20px;
+    font-size:10.5px; font-family:'IBM Plex Mono', monospace;
+  }
+  .badge.on{ background:rgba(127,169,140,0.15); color:var(--sage); }
+  .badge.off{ background:rgba(193,91,74,0.15); color:var(--danger); }
+  .row-del{ background:transparent; border:1px solid var(--border); color:var(--muted); padding:4px 8px; font-size:11px; }
+  .row-del:hover{ color:var(--danger); border-color:var(--danger); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="eyebrow">Grupo D · Estructura de Datos</span>
+    <h1>Herbario — Catálogo BST</h1>
+    <p>Cada producto extraído por web scraping se clasifica en un Árbol Binario de Búsqueda, indexado por ID, para lograr inserción, búsqueda y eliminación en tiempo logarítmico.</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="num" id="stat-total">0</div><div class="label">Productos</div></div>
+    <div class="stat"><div class="num" id="stat-altura">0</div><div class="label">Altura del árbol</div></div>
+    <div class="stat"><div class="num" id="stat-hora">--:--</div><div class="label">Última sync</div></div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="panel">
+      <h2>Web Scraping</h2>
+      <label for="scr-cantidad">Cantidad a generar</label>
+      <input id="scr-cantidad" type="number" value="15" min="1" max="200">
+      <div class="toggle-line">
+        <input type="checkbox" id="scr-simulado" checked>
+        <span>Usar datos simulados (sin URL real)</span>
+      </div>
+      <label for="scr-url">URL a scrapear (opcional)</label>
+      <input id="scr-url" type="text" placeholder="https://tienda-ejemplo.com/catalogo">
+      <button class="btn-primary" id="btn-scrapear">Ejecutar scraping e insertar</button>
+    </div>
+
+    <div class="panel">
+      <h2>Buscar producto</h2>
+      <label for="buscar-id">ID del producto</label>
+      <input id="buscar-id" type="number" placeholder="1005">
+      <button class="btn-secondary" id="btn-buscar">Buscar en el árbol</button>
+    </div>
+
+    <div class="panel">
+      <h2>Insertar manual</h2>
+      <label for="ins-id">ID</label>
+      <input id="ins-id" type="number" placeholder="2001">
+      <label for="ins-nombre">Nombre</label>
+      <input id="ins-nombre" type="text" placeholder="Audífonos Bluetooth">
+      <div class="row">
+        <div>
+          <label for="ins-precio">Precio</label>
+          <input id="ins-precio" type="number" step="0.01" placeholder="49.90">
+        </div>
+        <div>
+          <label for="ins-categoria">Categoría</label>
+          <input id="ins-categoria" type="text" placeholder="Electrónica">
+        </div>
+      </div>
+      <button class="btn-primary" id="btn-insertar">Insertar producto</button>
+    </div>
+
+    <div class="panel">
+      <h2>Eliminar</h2>
+      <label for="del-id">ID a eliminar</label>
+      <input id="del-id" type="number" placeholder="1005">
+      <button class="btn-danger" id="btn-eliminar">Eliminar del árbol</button>
+    </div>
+
+    <div id="estado">Conectando con el backend…</div>
+  </aside>
+
+  <main>
+    <p class="section-title">Estructura del árbol</p>
+    <p class="section-sub">Recorrido visual de raíz a hojas · el nodo raíz siempre a la izquierda del todo en el primer nivel</p>
+    <div id="tree-wrap">
+      <div id="tree-empty">Aún no hay productos indexados. Ejecuta un scraping para poblar el árbol.</div>
+      <svg id="tree-svg" style="display:none;"></svg>
+    </div>
+
+    <p class="section-title" style="margin-top:32px;">Catálogo ordenado</p>
+    <p class="section-sub">Recorrido inorden del BST · productos ordenados ascendentemente por ID</p>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Estado</th><th></th></tr>
+      </thead>
+      <tbody id="tabla-body"></tbody>
+    </table>
+  </main>
+</div>
+
+<script>
+/* =========================================================================
+   Configuración
+   ========================================================================= */
+const API_BASE = 'http://localhost:3000/api';
+
+/* =========================================================================
+   Utilidades de estado / feedback en pantalla
+   ========================================================================= */
+const $estado = document.getElementById('estado');
+function mostrarEstado(msg, tipo = '') {
+  $estado.textContent = msg;
+  $estado.className = tipo;
+}
+
+/* =========================================================================
+   Llamadas al backend
+   ========================================================================= */
+async function apiGet(path) {
+  const res = await fetch(`${API_BASE}${path}`);
+  if (!res.ok) throw new Error((await res.json()).mensaje || 'Error de red');
+  return res.json();
+}
+async function apiPost(path, body) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error((await res.json()).mensaje || 'Error de red');
+  return res.json();
+}
+async function apiDelete(path) {
+  const res = await fetch(`${API_BASE}${path}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error((await res.json()).mensaje || 'Error de red');
+  return res.json();
+}
+
+/* =========================================================================
+   Refrescar toda la vista: pide el árbol y la lista ordenada al backend
+   y vuelve a dibujar todo.
+   ========================================================================= */
+async function refrescarTodo() {
+  try {
+    const [arbol, catalogo] = await Promise.all([
+      apiGet('/arbol'),
+      apiGet('/productos')
+    ]);
+    dibujarArbol(arbol);
+    dibujarTabla(catalogo.productos);
+    document.getElementById('stat-total').textContent = catalogo.total;
+    document.getElementById('stat-altura').textContent = calcularAltura(arbol);
+    document.getElementById('stat-hora').textContent =
+      new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+    mostrarEstado(`Sincronizado · ${catalogo.total} productos en el árbol`, 'ok');
+  } catch (err) {
+    mostrarEstado(`No se pudo conectar al backend (${err.message}). Verifica que "npm start" esté corriendo en el puerto 3000.`, 'error');
+  }
+}
+
+function calcularAltura(nodo) {
+  if (!nodo) return 0;
+  return 1 + Math.max(calcularAltura(nodo.izquierdo), calcularAltura(nodo.derecho));
+}
+
+/* =========================================================================
+   Layout y dibujo del árbol en SVG
+   Algoritmo: recorrido inorden asignando X incremental (garantiza que el
+   árbol se dibuje ordenado de izquierda a derecha, sin cruces).
+   ========================================================================= */
+const NODE_W = 150, NODE_H = 58, X_GAP = 40, Y_GAP = 95;
+
+function calcularPosiciones(nodo) {
+  let contador = 0;
+  const posiciones = [];
+
+  function recorrer(n, profundidad) {
+    if (!n) return;
+    recorrer(n.izquierdo, profundidad + 1);
+    const x = contador * (NODE_W + X_GAP);
+    const y = profundidad * Y_GAP;
+    posiciones.push({ nodo: n, x, y });
+    contador++;
+    recorrer(n.derecho, profundidad + 1);
+  }
+  recorrer(nodo, 0);
+  return posiciones;
+}
+
+let ultimoHitId = null;
+
+function dibujarArbol(raiz, idResaltado = null) {
+  const svg = document.getElementById('tree-svg');
+  const empty = document.getElementById('tree-empty');
+
+  if (!raiz) {
+    svg.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  svg.style.display = 'block';
+  empty.style.display = 'none';
+
+  const posiciones = calcularPosiciones(raiz);
+  const anchoTotal = posiciones.length * (NODE_W + X_GAP);
+  const altoTotal = (Math.max(...posiciones.map(p => p.y)) + NODE_H + 40);
+
+  svg.setAttribute('viewBox', `0 0 ${anchoTotal} ${altoTotal}`);
+  svg.setAttribute('width', anchoTotal);
+  svg.setAttribute('height', altoTotal);
+  svg.innerHTML = '';
+
+  const mapaPos = new Map();
+  posiciones.forEach(p => mapaPos.set(p.nodo.producto.id, p));
+
+  // 1. dibujar conexiones primero (para que queden detrás de los nodos)
+  posiciones.forEach(p => {
+    [p.nodo.izquierdo, p.nodo.derecho].forEach(hijo => {
+      if (!hijo) return;
+      const hijoPos = mapaPos.get(hijo.producto.id);
+      const x1 = p.x + NODE_W / 2, y1 = p.y + NODE_H;
+      const x2 = hijoPos.x + NODE_W / 2, y2 = hijoPos.y;
+      const midY = (y1 + y2) / 2;
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`);
+      path.setAttribute('class', 'edge');
+      svg.appendChild(path);
+    });
+  });
+
+  // 2. dibujar nodos
+  posiciones.forEach(p => {
+    const prod = p.nodo.producto;
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', 'node-card' + (prod.id === idResaltado ? ' hit' : ''));
+    g.setAttribute('transform', `translate(${p.x}, ${p.y})`);
+
+    g.innerHTML = `
+      <rect width="${NODE_W}" height="${NODE_H}" rx="8"></rect>
+      <circle class="dot ${prod.disponible ? '' : 'off'}" cx="14" cy="14" r="4"></circle>
+      <text class="id-tag" x="26" y="18">#${prod.id}</text>
+      <text class="name" x="10" y="36">${truncar(prod.nombre, 20)}</text>
+      <text class="price" x="10" y="50">$${Number(prod.precio).toFixed(2)}</text>
+    `;
+    svg.appendChild(g);
+  });
+
+  // centra el scroll en el nodo resaltado, si aplica
+  if (idResaltado && mapaPos.has(idResaltado)) {
+    const wrap = document.getElementById('tree-wrap');
+    const pos = mapaPos.get(idResaltado);
+    wrap.scrollTo({ left: Math.max(pos.x - wrap.clientWidth / 2, 0), behavior: 'smooth' });
+  }
+}
+
+function truncar(txt, n) {
+  return txt.length > n ? txt.slice(0, n - 1) + '…' : txt;
+}
+
+/* =========================================================================
+   Tabla del catálogo (recorrido inorden)
+   ========================================================================= */
+function dibujarTabla(productos) {
+  const body = document.getElementById('tabla-body');
+  body.innerHTML = '';
+  if (!productos.length) {
+    body.innerHTML = `<tr><td colspan="6" style="color:var(--muted); text-align:center; padding:24px;">Sin productos aún</td></tr>`;
+    return;
+  }
+  productos.forEach(p => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">#${p.id}</td>
+      <td>${p.nombre}</td>
+      <td>${p.categoria || '—'}</td>
+      <td class="mono">$${Number(p.precio).toFixed(2)}</td>
+      <td><span class="badge ${p.disponible ? 'on' : 'off'}">${p.disponible ? 'Disponible' : 'Agotado'}</span></td>
+      <td><button class="row-del" data-id="${p.id}">Eliminar</button></td>
+    `;
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll('.row-del').forEach(btn => {
+    btn.addEventListener('click', () => eliminarProducto(btn.dataset.id));
+  });
+}
+
+/* =========================================================================
+   Acciones de los paneles laterales
+   ========================================================================= */
+document.getElementById('btn-scrapear').addEventListener('click', async () => {
+  const cantidad = Number(document.getElementById('scr-cantidad').value) || 10;
+  const simulado = document.getElementById('scr-simulado').checked;
+  const url = document.getElementById('scr-url').value.trim();
+
+  mostrarEstado('Scrapeando e insertando en el árbol…');
+  try {
+    const resp = await apiPost('/scrapear', { simulado, cantidad, url });
+    mostrarEstado(resp.mensaje, 'ok');
+    refrescarTodo();
+  } catch (err) {
+    mostrarEstado(`Error al scrapear: ${err.message}`, 'error');
+  }
+});
+
+document.getElementById('btn-buscar').addEventListener('click', async () => {
+  const id = Number(document.getElementById('buscar-id').value);
+  if (!id) return mostrarEstado('Ingresa un ID válido para buscar', 'error');
+
+  try {
+    const producto = await apiGet(`/productos/${id}`);
+    mostrarEstado(`Encontrado: #${producto.id} · ${producto.nombre}`, 'ok');
+    const arbol = await apiGet('/arbol');
+    dibujarArbol(arbol, id);
+  } catch (err) {
+    mostrarEstado(`No se encontró el producto #${id}`, 'error');
+  }
+});
+
+document.getElementById('btn-insertar').addEventListener('click', async () => {
+  const id = Number(document.getElementById('ins-id').value);
+  const nombre = document.getElementById('ins-nombre').value.trim();
+  const precio = Number(document.getElementById('ins-precio').value) || 0;
+  const categoria = document.getElementById('ins-categoria').value.trim() || 'General';
+
+  if (!id || !nombre) return mostrarEstado('ID y nombre son obligatorios', 'error');
+
+  try {
+    await apiPost('/productos', {
+      id, nombre, precio, categoria,
+      disponible: true, fechaScrapeo: new Date().toISOString()
+    });
+    mostrarEstado(`Producto #${id} insertado`, 'ok');
+    ['ins-id', 'ins-nombre', 'ins-precio', 'ins-categoria'].forEach(f => document.getElementById(f).value = '');
+    refrescarTodo();
+  } catch (err) {
+    mostrarEstado(`Error al insertar: ${err.message}`, 'error');
+  }
+});
+
+document.getElementById('btn-eliminar').addEventListener('click', () => {
+  const id = document.getElementById('del-id').value;
+  eliminarProducto(id);
+});
+
+async function eliminarProducto(id) {
+  if (!id) return mostrarEstado('Ingresa un ID válido para eliminar', 'error');
+  try {
+    const resp = await apiDelete(`/productos/${id}`);
+    mostrarEstado(resp.mensaje, 'ok');
+    refrescarTodo();
+  } catch (err) {
+    mostrarEstado(`Error al eliminar: ${err.message}`, 'error');
+  }
+}
+
+/* =========================================================================
+   Arranque
+   ========================================================================= */
+refrescarTodo();
+</script>
+</body>
+</html>
