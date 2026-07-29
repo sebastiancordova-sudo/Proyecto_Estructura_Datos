@@ -67,13 +67,37 @@ app.get('/api/productos/:id', (req, res) => {
  * Permite insertar un producto manualmente en el árbol.
  * Body esperado: { id: number, ...otros_datos }
  */
-app.post('/api/productos', (req, res) => {
-    const producto = req.body;
-    if (!producto.id) {
-        return res.status(400).json({ mensaje: 'El producto necesita un id numérico' });
+// --- 1. Ejecutar scraping (real o simulado) e insertar todo en el BST ---
+app.post('/api/scrapear', async (req, res) => {
+    const { url, simulado, cantidad } = req.body;
+
+    let productos;
+    if (simulado) {
+        productos = generarDatosSimulados(cantidad || 20);
+    } else {
+        productos = await scrapearSitio(url);
     }
-    arbolProductos.insertar(new ProductoNodo(producto));
-    res.status(201).json({ mensaje: 'Producto insertado', producto });
+
+    // Mezclamos el ORDEN de inserción (no los valores de los ID) con
+    // el algoritmo de Fisher-Yates. Esto es clave: aunque los ID sigan
+    // siendo numéricamente crecientes (33976, 33977, 33978...), insertarlos
+    // en un orden aleatorio evita que el árbol degenere en una cadena hacia
+    // la derecha, porque cada inserción ya no compara siempre contra "el
+    // último más grande hasta ahora".
+    for (let i = productos.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [productos[i], productos[j]] = [productos[j], productos[i]];
+    }
+
+    // Insertamos cada producto envuelto en ProductoNodo
+    productos.forEach(p => {
+        arbolProductos.insertar(new ProductoNodo(p));
+    });
+
+    res.json({
+        mensaje: `${productos.length} productos insertados en el BST`,
+        total: productos.length
+    });
 });
 
 /**
