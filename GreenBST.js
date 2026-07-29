@@ -1,133 +1,222 @@
 // GreenBST.js
-// el sistema: buscar, eliminar y recorrer el árbol para exportarlo al front.
+// Implementación del Árbol Binario de Búsqueda (BST) utilizado por
+// el sistema para insertar, buscar, eliminar y recorrer los productos.
+//
+// Cada nodo almacena un objeto ProductoNodo, el cual contiene el
+// producto completo. Las comparaciones se realizan utilizando el ID
+// del producto para garantizar un comportamiento consistente.
 
 class NodoArbol {
     constructor(valor) {
-        this.valor = valor;       // Aquí guardaremos el objeto producto completo
+        // Valor almacenado (ProductoNodo)
+        this.valor = valor;
+
+        // Referencias a los hijos
         this.izquierdo = null;
         this.derecho = null;
     }
 }
 
 class GreenBST {
+
     constructor() {
         this.raiz = null;
     }
 
-    // --- INSERCIÓN (tal cual la diste, sin modificar) ---
+    // ==========================================================
+    // INSERCIÓN
+    // Inserta un nuevo producto en el árbol utilizando el ID
+    // como clave de comparación.
+    // ==========================================================
     insertar(valor) {
+
         const nuevoNodo = new NodoArbol(valor);
+
         if (!this.raiz) {
             this.raiz = nuevoNodo;
         } else {
             this.insertarNodo(this.raiz, nuevoNodo);
         }
+
     }
 
     insertarNodo(nodoActual, nuevoNodo) {
-        if (nuevoNodo.valor < nodoActual.valor) {
+
+        const idNuevo = nuevoNodo.valor.producto.id;
+        const idActual = nodoActual.valor.producto.id;
+
+        if (idNuevo < idActual) {
+
             if (!nodoActual.izquierdo) {
                 nodoActual.izquierdo = nuevoNodo;
             } else {
                 this.insertarNodo(nodoActual.izquierdo, nuevoNodo);
             }
+
         } else {
+
             if (!nodoActual.derecho) {
                 nodoActual.derecho = nuevoNodo;
             } else {
                 this.insertarNodo(nodoActual.derecho, nuevoNodo);
             }
+
         }
+
     }
 
-    // --- BÚSQUEDA ---
-    // Recibe el valor (o clave de comparación) y devuelve el nodo o null.
-    buscar(valor) {
-        return this.buscarNodo(this.raiz, valor);
+    // ==========================================================
+    // BÚSQUEDA
+    // Busca un producto por su ID.
+    // Devuelve el nodo encontrado o null.
+    // ==========================================================
+    buscar(id) {
+        return this.buscarNodo(this.raiz, Number(id));
     }
 
-    buscarNodo(nodoActual, valor) {
-        if (!nodoActual) return null; // no existe
+    buscarNodo(nodoActual, id) {
 
-        // CORRECCIÓN: usamos Number(...) en ambos lados en vez de "===" directo.
-        // nodoActual.valor puede ser un objeto ProductoNodo (que define valueOf()
-        // devolviendo el id). El operador "===" NUNCA convierte un objeto a
-        // primitivo, así que un número nunca sería igual a un objeto aunque su
-        // valueOf() devuelva el mismo número. Al forzar Number() de ambos lados,
-        // se dispara la conversión correctamente y la comparación funciona.
-        if (Number(nodoActual.valor) === Number(valor)) return nodoActual; // encontrado
-
-        if (valor < nodoActual.valor) {
-            return this.buscarNodo(nodoActual.izquierdo, valor);
-        } else {
-            return this.buscarNodo(nodoActual.derecho, valor);
-        }
-    }
-
-    // --- ELIMINACIÓN ---
-    eliminar(valor) {
-        this.raiz = this.eliminarNodo(this.raiz, valor);
-    }
-
-    eliminarNodo(nodoActual, valor) {
         if (!nodoActual) return null;
 
-        if (valor < nodoActual.valor) {
-            nodoActual.izquierdo = this.eliminarNodo(nodoActual.izquierdo, valor);
-            return nodoActual;
-        } else if (valor > nodoActual.valor) {
-            nodoActual.derecho = this.eliminarNodo(nodoActual.derecho, valor);
-            return nodoActual;
-        } else {
-            // Caso 1: nodo hoja (sin hijos)
-            if (!nodoActual.izquierdo && !nodoActual.derecho) {
-                return null;
-            }
-            // Caso 2: un solo hijo
-            if (!nodoActual.izquierdo) return nodoActual.derecho;
-            if (!nodoActual.derecho) return nodoActual.izquierdo;
+        const idActual = nodoActual.valor.producto.id;
 
-            // Caso 3: dos hijos -> buscamos el sucesor (mínimo del subárbol derecho)
-            let sucesor = nodoActual.derecho;
-            while (sucesor.izquierdo) {
-                sucesor = sucesor.izquierdo;
-            }
-            nodoActual.valor = sucesor.valor; // copiamos el valor del sucesor
-            // eliminamos el sucesor de su posición original
-            nodoActual.derecho = this.eliminarNodo(nodoActual.derecho, sucesor.valor);
+        if (id === idActual) {
             return nodoActual;
         }
+
+        if (id < idActual) {
+            return this.buscarNodo(nodoActual.izquierdo, id);
+        }
+
+        return this.buscarNodo(nodoActual.derecho, id);
+
     }
 
-    // --- RECORRIDO INORDEN ---
-    // Devuelve los productos ORDENADOS por su clave. Útil para listar
-    // el catálogo completo ya clasificado.
+    // ==========================================================
+    // ELIMINACIÓN
+    // Elimina un producto del árbol utilizando su ID.
+    // ==========================================================
+    eliminar(id) {
+        this.raiz = this.eliminarNodo(this.raiz, Number(id));
+    }
+
+    eliminarNodo(nodoActual, id) {
+
+        if (!nodoActual) return null;
+
+        const idActual = nodoActual.valor.producto.id;
+
+        if (id < idActual) {
+
+            nodoActual.izquierdo = this.eliminarNodo(
+                nodoActual.izquierdo,
+                id
+            );
+
+            return nodoActual;
+
+        }
+
+        if (id > idActual) {
+
+            nodoActual.derecho = this.eliminarNodo(
+                nodoActual.derecho,
+                id
+            );
+
+            return nodoActual;
+
+        }
+
+        // ------------------------------------------------------
+        // Caso 1: Nodo hoja
+        // ------------------------------------------------------
+        if (!nodoActual.izquierdo && !nodoActual.derecho) {
+            return null;
+        }
+
+        // ------------------------------------------------------
+        // Caso 2: Un solo hijo
+        // ------------------------------------------------------
+        if (!nodoActual.izquierdo) {
+            return nodoActual.derecho;
+        }
+
+        if (!nodoActual.derecho) {
+            return nodoActual.izquierdo;
+        }
+
+        // ------------------------------------------------------
+        // Caso 3: Dos hijos
+        // Se reemplaza por el sucesor inorden
+        // (el menor del subárbol derecho).
+        // ------------------------------------------------------
+        let sucesor = nodoActual.derecho;
+
+        while (sucesor.izquierdo) {
+            sucesor = sucesor.izquierdo;
+        }
+
+        nodoActual.valor = sucesor.valor;
+
+        nodoActual.derecho = this.eliminarNodo(
+            nodoActual.derecho,
+            sucesor.valor.producto.id
+        );
+
+        return nodoActual;
+
+    }
+
+    // ==========================================================
+    // RECORRIDO INORDEN
+    // Devuelve los productos ordenados ascendentemente por ID.
+    // ==========================================================
     inOrden() {
+
         const resultado = [];
+
         const recorrer = (nodo) => {
+
             if (!nodo) return;
+
             recorrer(nodo.izquierdo);
+
             resultado.push(nodo.valor);
+
             recorrer(nodo.derecho);
+
         };
+
         recorrer(this.raiz);
+
         return resultado;
+
     }
 
-    // --- EXPORTAR PARA EL FRONT ---
-    // Convierte el árbol a un objeto plano {valor, izquierdo, derecho}
-    // que luego usaremos para dibujarlo gráficamente en el frontend.
+    // ==========================================================
+    // EXPORTAR ESTRUCTURA
+    // Convierte el árbol en un objeto plano para ser enviado
+    // al frontend y dibujado gráficamente.
+    // ==========================================================
     exportarEstructura() {
+
         const convertir = (nodo) => {
+
             if (!nodo) return null;
+
             return {
                 valor: nodo.valor,
                 izquierdo: convertir(nodo.izquierdo),
                 derecho: convertir(nodo.derecho)
             };
+
         };
+
         return convertir(this.raiz);
+
     }
+
 }
 
 module.exports = { GreenBST, NodoArbol };
