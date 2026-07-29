@@ -1,5 +1,4 @@
 // GreenBST.js
-// Extiende tu clase base agregando las operaciones que necesita
 // el sistema: buscar, eliminar y recorrer el árbol para exportarlo al front.
 
 class NodoArbol {
